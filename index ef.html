@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
+<title>EcoFlux</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  --deep:    #020d0f;
+  --surface: #071418;
+  --card:    #0b1e23;
+  --border:  #12303a;
+  --water:   #00c2d1;
+  --leaf:    #3dd68c;
+  --warn:    #f5a623;
+  --danger:  #e8394a;
+  --text:    #d4eef2;
+  --muted:   #3a6672;
+  --white:   #ffffff;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+
+body{
+  background:var(--deep);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── RIVER BACKGROUND ── */
+#river-bg{
+  position:fixed;
+  bottom:0;left:0;right:0;
+  height:180px;
+  pointer-events:none;
+  z-index:0;
+  opacity:0.18;
+}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(2,13,15,0.92);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+}
+.logo-icon{
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--water),var(--leaf));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+}
+.logo-text{
+  font-size:1.3em;font-weight:900;
+  letter-spacing:1px;
+  background:linear-gradient(90deg,var(--water),var(--leaf));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.logo-sub{font-size:0.65em;color:var(--muted);letter-spacing:2px;font-weight:400;margin-top:-2px;}
+
+#conn-pill{
+  display:flex;align-items:center;gap:7px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:99px;
+  padding:6px 14px;
+  font-size:0.78em;font-weight:600;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+#conn-pill:hover{border-color:var(--water);}
+#conn-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--muted);
+  transition:background 0.4s;
+}
+#conn-dot.on{background:var(--leaf);box-shadow:0 0 8px var(--leaf);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── LAYOUT ── */
+main{
+  position:relative;z-index:1;
+  max-width:480px;margin:0 auto;
+  padding:20px 16px 120px;
+  display:flex;flex-direction:column;gap:14px;
+}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+}
+.card-title{
+  font-size:0.68em;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.card-title svg{opacity:0.6;}
+
+/* ── BALDE ANIMADO ── */
+#bucket-section{
+  background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;
+}
+.bucket-wrap{
+  display:flex;align-items:flex-end;gap:20px;
+}
+.bucket-visual{
+  position:relative;
+  width:80px;height:120px;flex-shrink:0;
+}
+/* bucket SVG inline */
+.bucket-water{
+  position:absolute;
+  bottom:6px;left:8px;right:8px;
+  border-radius:0 0 8px 8px;
+  background:linear-gradient(180deg,rgba(0,194,209,0.6),rgba(0,194,209,0.9));
+  transition:height 1.2s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;
+}
+.water-wave{
+  position:absolute;top:-8px;left:-10px;right:-10px;height:16px;
+  background:rgba(0,194,209,0.5);
+  border-radius:50%;
+  animation:wave 2s ease-in-out infinite;
+}
+@keyframes wave{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+
+.bucket-svg{position:absolute;bottom:0;left:0;width:80px;height:120px;}
+
+.bucket-info{flex:1;}
+.bucket-pct{
+  font-family:'JetBrains Mono',monospace;
+  font-size:2.6em;font-weight:700;
+  color:var(--water);
+  line-height:1;
+}
+.bucket-label{font-size:0.75em;color:var(--muted);margin-top:4px;margin-bottom:12px;}
+.bucket-status{
+  font-size:0.85em;font-weight:600;
+  padding:5px 12px;border-radius:99px;
+  background:rgba(61,214,140,0.1);
+  color:var(--leaf);
+  display:inline-block;
+}
+.bucket-status.warn{background:rgba(245,166,35,0.1);color:var(--warn);}
+.bucket-status.full{background:rgba(0,194,209,0.15);color:var(--water);}
+
+/* ── BOMBA CONTROLE ── */
+.pump-status-row{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+}
+.pump-indicator{
+  width:48px;height:48px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  background:rgba(232,57,74,0.1);
+  border:1px solid rgba(232,57,74,0.2);
+  transition:all 0.3s;
+}
+.pump-indicator.on{
+  background:rgba(61,214,140,0.12);
+  border-color:rgba(61,214,140,0.3);
+  box-shadow:0 0 16px rgba(61,214,140,0.15);
+}
+.pump-name{font-size:1.1em;font-weight:700;}
+.pump-state{font-size:0.8em;color:var(--muted);}
+.pump-uptime{
+  margin-left:auto;
+  font-family:'JetBrains Mono',monospace;
+  font-size:1em;font-weight:700;
+  color:var(--water);
+}
+
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0;}
+.btn{
+  padding:16px 10px;
+  border:none;border-radius:14px;
+  font-family:'Outfit',sans-serif;
+  font-size:0.95em;font-weight:700;
+  letter-spacing:0.5px;
+  cursor:pointer;
+  transition:all 0.15s;
+  text-transform:uppercase;
+}
+.btn:active{transform:scale(0.96);}
+.btn:disabled{cursor:not-allowed;}
+.btn-on{background:var(--leaf);color:#021a10;}
+.btn-on.active{opacity:0.4;}
+.btn-off{background:var(--danger);color:#fff;}
+.btn-off.active{opacity:0.4;}
+
+/* ── TIMER ── */
+.timer-row{display:flex;gap:10px;align-items:center;}
+.timer-input{
+  flex:1;
+  background:var(--deep);
+  border:1px solid var(--border);
+  border-radius:12px;
+  color:var(--text);
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.1em;font-weight:700;
+  padding:12px 16px;
+  outline:none;text-align:center;
+}
+.timer-input:focus{border-color:var(--water);}
+.timer-input::placeholder{color:var(--muted);font-weight:400;}
+.btn-timer{
+  background:linear-gradient(135deg,var(--water),#0099a8);
+  color:#021a1f;
+  padding:12px 20px;
+  border:none;border-radius:12px;
+  font-family:'Outfit',sans-serif;
+  font-size:0.9em;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+  transition:opacity 0.2s;
+}
+.btn-timer:disabled{opacity:0.3;cursor:not-allowed;}
+.timer-remain{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.85em;color:var(--water);
+  margin-top:10px;text-align:center;
+  min-height:20px;
+}
+
+/* ── MOTOR NEMA ── */
+.motor-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-motor{
+  padding:16px 10px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:var(--surface);
+  color:var(--text);
+  font-family:'Outfit',sans-serif;
+  font-size:0.9em;font-weight:700;
+  cursor:pointer;
+  transition:all 0.15s;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+.btn-motor:hover{border-color:var(--water);background:rgba(0,194,209,0.05);}
+.btn-motor:active{transform:scale(0.96);}
+.btn-motor:disabled{opacity:0.3;cursor:not-allowed;}
+.btn-motor span{font-size:1.6em;}
+.motor-pos{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.8em;color:var(--muted);
+  margin-top:8px;text-align:center;
+}
+
+/* ── BATERIA ── */
+.bat-row{display:flex;align-items:center;gap:14px;margin-bottom:10px;}
+.bat-icon{font-size:2em;}
+.bat-pct{
+  font-family:'JetBrains Mono',monospace;
+  font-size:2em;font-weight:700;
+  color:var(--leaf);
+}
+.bat-v{font-size:0.8em;color:var(--muted);margin-top:2px;}
+.bar-bg{
+  width:100%;height:10px;
+  background:var(--border);border-radius:99px;overflow:hidden;
+}
+.bar-fill{
+  height:100%;border-radius:99px;
+  transition:width 0.8s ease,background 0.5s;
+}
+
+/* ── HEALTH CARDS ── */
+.health-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.health-item{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 10px;
+  text-align:center;
+}
+.health-icon{font-size:1.4em;margin-bottom:6px;}
+.health-name{font-size:0.65em;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+.health-hours{
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.9em;font-weight:700;
+  color:var(--text);
+  margin-bottom:6px;
+}
+.health-bar-bg{width:100%;height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.health-bar-fill{height:100%;border-radius:99px;transition:width 0.8s,background 0.5s;}
+.health-pct{font-size:0.65em;color:var(--muted);margin-top:4px;}
+
+/* ── HORAS TOTAIS ── */
+.hours-big{
+  font-family:'JetBrains Mono',monospace;
+  font-size:3em;font-weight:700;
+  background:linear-gradient(90deg,var(--water),var(--leaf));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1;margin-bottom:4px;
+}
+.hours-label{font-size:0.75em;color:var(--muted);}
+
+/* ── LOG ── */
+#log{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:14px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:0.72em;color:var(--muted);
+  max-height:120px;overflow-y:auto;line-height:2;
+}
+.log-ok{color:var(--leaf);}
+.log-err{color:var(--danger);}
+.log-info{color:var(--water);}
+
+/* ── NO BLE ── */
+#no-ble{
+  display:none;
+  background:rgba(232,57,74,0.08);
+  border:1px solid rgba(232,57,74,0.3);
+  border-radius:14px;padding:16px;
+  color:var(--danger);font-size:0.88em;text-align:center;
+  margin-bottom:14px;
+}
+
+/* ── RIVER WAVES SVG ── */
+.river-svg{position:fixed;bottom:0;left:0;width:100%;z-index:0;pointer-events:none;opacity:0.12;}
+</style>
+</head>
+<body>
+
+<!-- River atmosphere -->
+<svg class="river-svg" viewBox="0 0 1440 180" preserveAspectRatio="none">
+  <path fill="var(--water)" fill-opacity="0.4">
+    <animate attributeName="d" dur="8s" repeatCount="indefinite"
+      values="M0,80 C360,120 1080,40 1440,80 L1440,180 L0,180 Z;
+              M0,60 C360,100 1080,60 1440,60 L1440,180 L0,180 Z;
+              M0,80 C360,120 1080,40 1440,80 L1440,180 L0,180 Z"/>
+  </path>
+  <path fill="var(--leaf)" fill-opacity="0.2">
+    <animate attributeName="d" dur="12s" repeatCount="indefinite"
+      values="M0,120 C480,80 960,140 1440,100 L1440,180 L0,180 Z;
+              M0,100 C480,140 960,100 1440,120 L1440,180 L0,180 Z;
+              M0,120 C480,80 960,140 1440,100 L1440,180 L0,180 Z"/>
+  </path>
+</svg>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌊</div>
+    <div>
+      <div class="logo-text">EcoFlux</div>
+      <div class="logo-sub">CONTROLE DE ÁGUA</div>
+    </div>
+  </div>
+  <div id="conn-pill" onclick="conectar()">
+    <div id="conn-dot"></div>
+    <span id="conn-label">Conectar</span>
+  </div>
+</header>
+
+<main>
+
+  <div id="no-ble">⚠️ Use o Chrome no Android para conectar via Bluetooth.</div>
+
+  <!-- BALDE -->
+  <div class="card" id="bucket-section">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8 2 4 8 4 14a8 8 0 0016 0C20 8 16 2 12 2z"/></svg>
+      Nível do Reservatório
+    </div>
+    <div class="bucket-wrap">
+      <div class="bucket-visual">
+        <svg class="bucket-svg" viewBox="0 0 80 120" fill="none">
+          <path d="M8 20 L4 114 Q4 118 8 118 L72 118 Q76 118 76 114 L72 20 Z" fill="none" stroke="#1e4a55" stroke-width="2.5"/>
+          <path d="M6 20 L74 20" stroke="#1e4a55" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M20 20 Q40 8 60 20" fill="none" stroke="#1e4a55" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <div class="bucket-water" id="bucket-water" style="height:0%">
+          <div class="water-wave"></div>
+        </div>
+      </div>
+      <div class="bucket-info">
+        <div class="bucket-pct" id="bucket-pct">-- %</div>
+        <div class="bucket-label">nível atual</div>
+        <div class="bucket-status" id="bucket-status-label">Aguardando sensor</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOMBA -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+      Bomba de Porão
+    </div>
+    <div class="pump-status-row">
+      <div class="pump-indicator" id="pump-indicator">💧</div>
+      <div>
+        <div class="pump-name" id="pump-name">DESLIGADA</div>
+        <div class="pump-state">Seaflo 500GPH · 12V</div>
+      </div>
+      <div class="pump-uptime" id="pump-uptime">00:00:00</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-on"  id="btn-on"  onclick="ligar()"    disabled>▶ Ligar</button>
+      <button class="btn btn-off" id="btn-off" onclick="desligar()" disabled>■ Desligar</button>
+    </div>
+  </div>
+
+  <!-- TIMER -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Timer Automático
+    </div>
+    <div class="timer-row">
+      <input class="timer-input" type="number" id="timer-input" placeholder="min" min="1" max="999"/>
+      <button class="btn-timer" id="btn-timer" onclick="definirTimer()" disabled>Iniciar</button>
+    </div>
+    <div class="timer-remain" id="timer-remain"></div>
+  </div>
+
+  <!-- MOTOR NEMA -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2M12 12v3M9 15h6"/></svg>
+      Motor NEMA 23 · Posição do Balde
+    </div>
+    <div class="motor-row">
+      <button class="btn-motor" id="btn-up" onclick="moverMotor('U')" disabled>
+        <span>⬆️</span>Subir
+      </button>
+      <button class="btn-motor" id="btn-down" onclick="moverMotor('D')" disabled>
+        <span>⬇️</span>Descer
+      </button>
+    </div>
+    <div class="motor-pos" id="motor-pos">Posição: --</div>
+  </div>
+
+  <!-- BATERIA -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="16" height="10" rx="2"/><path d="M22 11v2"/></svg>
+      Bateria AGM · 12V 17Ah
+    </div>
+    <div class="bat-row">
+      <div class="bat-icon">🔋</div>
+      <div>
+        <div class="bat-pct" id="bat-pct">-- %</div>
+        <div class="bat-v" id="bat-v">-- V</div>
+      </div>
+    </div>
+    <div class="bar-bg">
+      <div class="bar-fill" id="bat-bar" style="width:0%;background:var(--leaf)"></div>
+    </div>
+  </div>
+
+  <!-- SAÚDE DOS COMPONENTES -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Vida Útil dos Componentes
+    </div>
+    <div class="health-grid">
+      <div class="health-item">
+        <div class="health-icon">🔋</div>
+        <div class="health-name">Bateria</div>
+        <div class="health-hours" id="h-bat-h">0h</div>
+        <div class="health-bar-bg"><div class="health-bar-fill" id="h-bat-bar" style="width:0%"></div></div>
+        <div class="health-pct" id="h-bat-pct">0 / 500h</div>
+      </div>
+      <div class="health-item">
+        <div class="health-icon">💧</div>
+        <div class="health-name">Bomba</div>
+        <div class="health-hours" id="h-pump-h">0h</div>
+        <div class="health-bar-bg"><div class="health-bar-fill" id="h-pump-bar" style="width:0%"></div></div>
+        <div class="health-pct" id="h-pump-pct">0 / 1000h</div>
+      </div>
+      <div class="health-item">
+        <div class="health-icon">⚙️</div>
+        <div class="health-name">Motor</div>
+        <div class="health-hours" id="h-mot-h">0h</div>
+        <div class="health-bar-bg"><div class="health-bar-fill" id="h-mot-bar" style="width:0%"></div></div>
+        <div class="health-pct" id="h-mot-pct">0 / 2000h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HORAS TOTAIS -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+      Horas Totais de Operação
+    </div>
+    <div class="hours-big" id="total-hours">0.0h</div>
+    <div class="hours-label">desde o primeiro uso registrado</div>
+  </div>
+
+  <!-- LOG -->
+  <div id="log"><span class="log-info">EcoFlux iniciado. Aguardando conexão BLE...</span></div>
+
+</main>
+
+<script>
+const SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const RX  = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const TX  = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+const LIMITS = {bat:500, pump:1000, motor:2000};
+
+let rxChar=null, connected=false;
+let bombaOn=false;
+// Horas totais persistidas em localStorage
+let totalHours  = parseFloat(localStorage.getItem('ef_total') || '0');
+let batHours    = parseFloat(localStorage.getItem('ef_bat')   || '0');
+let pumpHours   = parseFloat(localStorage.getItem('ef_pump')  || '0');
+let motorHours  = parseFloat(localStorage.getItem('ef_motor') || '0');
+let motorPos    = 0; // 0-100
+
+if(!navigator.bluetooth) document.getElementById('no-ble').style.display='block';
+
+function log(msg,cls=''){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  if(cls) d.className=cls;
+  d.textContent=new Date().toLocaleTimeString()+' › '+msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+async function conectar(){
+  try{
+    log('Procurando EcoFlux...','log-info');
+    const dev=await navigator.bluetooth.requestDevice({
+      filters:[{name:'EcoFlux'}],
+      optionalServices:[SVC]
+    });
+    dev.addEventListener('gattserverdisconnected',onDisc);
+    const srv=await dev.gatt.connect();
+    const svc=await srv.getPrimaryService(SVC);
+    rxChar=await svc.getCharacteristic(RX);
+    const tx=await svc.getCharacteristic(TX);
+    await tx.startNotifications();
+    tx.addEventListener('characteristicvaluechanged',onData);
+    connected=true;
+    document.getElementById('conn-dot').classList.add('on');
+    document.getElementById('conn-label').textContent='EcoFlux';
+    enableControls(true);
+    log('Conectado!','log-ok');
+  }catch(e){log('Erro: '+e.message,'log-err');}
+}
+
+function onDisc(){
+  connected=false;
+  document.getElementById('conn-dot').classList.remove('on');
+  document.getElementById('conn-label').textContent='Reconectar';
+  enableControls(false);
+  log('Desconectado.','log-err');
+}
+
+function enableControls(on){
+  ['btn-on','btn-off','btn-timer','btn-up','btn-down'].forEach(id=>{
+    document.getElementById(id).disabled=!on;
+  });
+}
+
+function onData(e){
+  const msg=new TextDecoder().decode(e.target.value).trim();
+
+  if(msg.startsWith('STATUS:')){
+    // STATUS:bomba:uptime:tensao:timerSeg:nivelPct:motorPos
+    const p=msg.split(':');
+    const on=p[1]==='1';
+    const uptime=p[2]+':'+p[3]+':'+p[4];
+    const tensao=parseFloat(p[5]);
+    const timerSeg=parseInt(p[6])||0;
+    const nivel=parseInt(p[7])||0;
+    motorPos=parseInt(p[8])||motorPos;
+
+    // bomba
+    bombaOn=on;
+    const ind=document.getElementById('pump-indicator');
+    const nm=document.getElementById('pump-name');
+    ind.className='pump-indicator'+(on?' on':'');
+    ind.textContent=on?'🌀':'💧';
+    nm.textContent=on?'LIGADA':'DESLIGADA';
+    document.getElementById('pump-uptime').textContent=uptime;
+
+    // botões highlight
+    document.getElementById('btn-on').className='btn btn-on'+(on?' active':'');
+    document.getElementById('btn-off').className='btn btn-off'+(on?'':' active');
+
+    // timer
+    if(timerSeg>0){
+      const m=Math.floor(timerSeg/60),s=timerSeg%60;
+      document.getElementById('timer-remain').textContent='⏱ Restam '+m+'m '+s+'s';
+    } else {
+      document.getElementById('timer-remain').textContent='';
+    }
+
+    // balde
+    updateBucket(nivel);
+
+    // motor
+    updateMotorPos(motorPos);
+
+    // bateria
+    updateBateria(tensao);
+
+    // horas (uptime em segundos acumulados)
+    const parts=uptime.split(':');
+    const hh=parseInt(parts[0]),mm=parseInt(parts[1]),ss=parseInt(parts[2]);
+    const sessionH=(hh*3600+mm*60+ss)/3600;
+    if(on){
+      pumpHours=parseFloat(localStorage.getItem('ef_pump')||'0')+0.0006;
+      batHours =parseFloat(localStorage.getItem('ef_bat') ||'0')+0.0006;
+    }
+    updateHealth();
+
+  } else if(msg==='OK:LIGADA'){
+    log('Bomba ligada.','log-ok');
+  } else if(msg==='OK:DESLIGADA'){
+    log('Bomba desligada.','log-ok');
+  } else if(msg.startsWith('OK:TIMER:')){
+    log('Timer de '+msg.split(':')[2]+' min.','log-ok');
+  } else if(msg==='OK:TIMER_FIM'){
+    log('Timer encerrado — bomba desligada.','log-info');
+  } else if(msg==='OK:UP'){
+    motorPos=Math.min(100,motorPos+10);
+    updateMotorPos(motorPos);
+    motorHours+=0.001;
+    localStorage.setItem('ef_motor',motorHours);
+    updateHealth();
+  } else if(msg==='OK:DOWN'){
+    motorPos=Math.max(0,motorPos-10);
+    updateMotorPos(motorPos);
+    motorHours+=0.001;
+    localStorage.setItem('ef_motor',motorHours);
+    updateHealth();
+  }
+}
+
+function updateBucket(pct){
+  const water=document.getElementById('bucket-water');
+  const pctEl=document.getElementById('bucket-pct');
+  const statEl=document.getElementById('bucket-status-label');
+  const maxH=100; // px inside bucket area
+  water.style.height=(pct/100*96)+'px';
+  pctEl.textContent=pct+'%';
+  statEl.className='bucket-status';
+  if(pct>=90){statEl.textContent='Cheio';statEl.classList.add('full');}
+  else if(pct>=60){statEl.textContent='Normal';}
+  else if(pct>=30){statEl.textContent='Médio';statEl.classList.add('warn');}
+  else{statEl.textContent='Baixo';}
+}
+
+function updateMotorPos(pos){
+  document.getElementById('motor-pos').textContent='Posição: '+pos+'%  ('+
+    (pos<33?'Baixo':pos<66?'Médio':'Alto')+')';
+}
+
+function updateBateria(v){
+  const pct=Math.min(100,Math.max(0,((v-10.5)/(12.6-10.5))*100));
+  document.getElementById('bat-pct').textContent=isNaN(pct)?'-- %':Math.round(pct)+'%';
+  document.getElementById('bat-v').textContent=isNaN(v)?'-- V':v.toFixed(1)+' V';
+  const bar=document.getElementById('bat-bar');
+  bar.style.width=(isNaN(pct)?0:pct)+'%';
+  bar.style.background=pct>50?'var(--leaf)':pct>20?'var(--warn)':'var(--danger)';
+}
+
+function healthColor(pct){
+  if(pct<50) return 'var(--leaf)';
+  if(pct<75) return 'var(--warn)';
+  return 'var(--danger)';
+}
+
+function updateHealth(){
+  // bat
+  const bp=Math.min(100,(batHours/LIMITS.bat)*100);
+  document.getElementById('h-bat-h').textContent=batHours.toFixed(1)+'h';
+  document.getElementById('h-bat-bar').style.width=bp+'%';
+  document.getElementById('h-bat-bar').style.background=healthColor(bp);
+  document.getElementById('h-bat-pct').textContent=Math.round(batHours)+' / '+LIMITS.bat+'h';
+  // pump
+  const pp=Math.min(100,(pumpHours/LIMITS.pump)*100);
+  document.getElementById('h-pump-h').textContent=pumpHours.toFixed(1)+'h';
+  document.getElementById('h-pump-bar').style.width=pp+'%';
+  document.getElementById('h-pump-bar').style.background=healthColor(pp);
+  document.getElementById('h-pump-pct').textContent=Math.round(pumpHours)+' / '+LIMITS.pump+'h';
+  // motor
+  const mp=Math.min(100,(motorHours/LIMITS.motor)*100);
+  document.getElementById('h-mot-h').textContent=motorHours.toFixed(1)+'h';
+  document.getElementById('h-mot-bar').style.width=mp+'%';
+  document.getElementById('h-mot-bar').style.background=healthColor(mp);
+  document.getElementById('h-mot-pct').textContent=Math.round(motorHours)+' / '+LIMITS.motor+'h';
+  // total
+  totalHours=batHours;
+  localStorage.setItem('ef_total',totalHours);
+  localStorage.setItem('ef_bat',batHours);
+  localStorage.setItem('ef_pump',pumpHours);
+  localStorage.setItem('ef_motor',motorHours);
+  document.getElementById('total-hours').textContent=totalHours.toFixed(1)+'h';
+}
+
+async function enviar(cmd){
+  if(!rxChar) return;
+  await rxChar.writeValue(new TextEncoder().encode(cmd));
+}
+
+function ligar()   {enviar('L');}
+function desligar(){enviar('D');}
+
+function definirTimer(){
+  const v=parseInt(document.getElementById('timer-input').value);
+  if(!v||v<1){log('Digite um valor válido.','log-err');return;}
+  enviar('T:'+v);
+  log('Timer: '+v+' min','log-info');
+}
+
+function moverMotor(dir){
+  enviar('M:'+dir);
+  log('Motor: '+(dir==='U'?'subindo':'descendo'),'log-info');
+}
+
+// Inicializar health com dados salvos
+updateHealth();
+updateBateria(NaN);
+updateBucket(0);
+updateMotorPos(0);
+</script>
+</body>
+</html>
