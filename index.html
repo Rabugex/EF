@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>Controle da Bomba</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+    :root {
+      --bg: #080c10;
+      --surface: #0e1419;
+      --border: #1e2a35;
+      --accent: #00d4ff;
+      --green: #00e676;
+      --red: #ff3d57;
+      --orange: #ff9100;
+      --text: #e8edf2;
+      --muted: #4a6070;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 40px;
+    }
+
+    /* Header */
+    header {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-top: 8px;
+    }
+
+    header h1 {
+      font-size: 1.1em;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    #status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.4s;
+    }
+    #status-dot.connected { background: var(--green); box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Cards */
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    .card-label {
+      font-size: 0.7em;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* Status bomba */
+    #bomba-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2em;
+      font-weight: 700;
+      color: var(--red);
+      transition: color 0.3s;
+    }
+    #bomba-status.on { color: var(--green); }
+
+    /* Info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .info-item .info-label {
+      font-size: 0.68em;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .info-item .info-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3em;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* Botões grandes */
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .btn {
+      padding: 18px 10px;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1em;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      text-transform: uppercase;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .btn-connect  { background: var(--accent); color: #000; width: 100%; max-width: 420px; margin-bottom: 14px; padding: 16px; border-radius: 14px; }
+    .btn-on       { background: var(--green); color: #000; }
+    .btn-off      { background: var(--red);   color: #fff; }
+    .btn-timer    { background: var(--orange); color: #000; width: 100%; max-width: 420px; padding: 16px; border-radius: 14px; }
+
+    /* Timer input */
+    .timer-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .timer-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2em;
+      padding: 12px 16px;
+      outline: none;
+      text-align: center;
+    }
+    .timer-row input:focus { border-color: var(--accent); }
+
+    /* Tensão barra */
+    .battery-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .battery-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--green);
+      transition: width 0.5s, background 0.5s;
+    }
+
+    /* Log */
+    #log {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75em;
+      color: var(--muted);
+      max-height: 140px;
+      overflow-y: auto;
+      line-height: 1.8;
+    }
+
+    .log-entry { color: var(--muted); }
+    .log-entry.ok { color: var(--green); }
+    .log-entry.err { color: var(--red); }
+    .log-entry.info { color: var(--accent); }
+
+    #no-ble {
+      display: none;
+      background: #2a0a0a;
+      border: 1px solid var(--red);
+      border-radius: 12px;
+      padding: 16px;
+      color: var(--red);
+      font-size: 0.9em;
+      text-align: center;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Bomba ESP32</h1>
+  <div id="status-dot"></div>
+</header>
+
+<div id="no-ble">
+  ⚠️ Seu navegador não suporta Web Bluetooth.<br>
+  Use o <strong>Chrome</strong> no Android.
+</div>
+
+<button class="btn btn-connect" id="btn-connect" onclick="conectar()">Conectar ESP32</button>
+
+<div class="card">
+  <div class="card-label">Status da Bomba</div>
+  <div id="bomba-status">DESLIGADA</div>
+</div>
+
+<div class="btn-row">
+  <button class="btn btn-on"  id="btn-on"  onclick="ligar()"    disabled>LIGAR</button>
+  <button class="btn btn-off" id="btn-off" onclick="desligar()" disabled>DESLIGAR</button>
+</div>
+
+<div class="card info-grid">
+  <div class="info-item">
+    <div class="info-label">Tempo ativo</div>
+    <div class="info-value" id="uptime">--:--:--</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Timer restante</div>
+    <div class="info-value" id="timer-restante">--</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Tensão da Bateria</div>
+  <div class="info-value" id="tensao" style="font-family:'JetBrains Mono',monospace;font-size:1.6em;font-weight:700;color:var(--green)">-- V</div>
+  <div class="battery-bar-bg">
+    <div class="battery-bar-fill" id="battery-fill" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">Definir Timer</div>
+  <div class="timer-row">
+    <input type="number" id="timer-input" placeholder="0" min="1" max="999" />
+    <span style="color:var(--muted);font-size:0.9em">min</span>
+  </div>
+</div>
+<button class="btn btn-timer" id="btn-timer" onclick="definirTimer()" disabled>INICIAR TIMER</button>
+
+<div style="height:14px"></div>
+<div id="log"><span class="log-entry info">Aguardando conexão...</span></div>
+
+<script>
+const SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+let device, rxChar, connected = false;
+
+// Verifica suporte BLE
+if (!navigator.bluetooth) {
+  document.getElementById('no-ble').style.display = 'block';
+  document.getElementById('btn-connect').disabled = true;
+}
+
+function log(msg, type='') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-entry ' + type;
+  line.textContent = new Date().toLocaleTimeString() + ' › ' + msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function conectar() {
+  try {
+    log('Procurando ESP32...', 'info');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'ESP32 Bomba' }],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    device.addEventListener('gattserverdisconnected', onDisconnect);
+
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    rxChar        = await service.getCharacteristic(RX_UUID);
+    const txChar  = await service.getCharacteristic(TX_UUID);
+
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', onData);
+
+    connected = true;
+    document.getElementById('status-dot').classList.add('connected');
+    document.getElementById('btn-connect').textContent = '✓ Conectado';
+    document.getElementById('btn-connect').style.background = 'var(--green)';
+    document.getElementById('btn-on').disabled    = false;
+    document.getElementById('btn-off').disabled   = false;
+    document.getElementById('btn-timer').disabled = false;
+    log('Conectado ao ESP32!', 'ok');
+  } catch(e) {
+    log('Erro: ' + e.message, 'err');
+  }
+}
+
+function onDisconnect() {
+  connected = false;
+  document.getElementById('status-dot').classList.remove('connected');
+  document.getElementById('btn-connect').textContent = 'Reconectar';
+  document.getElementById('btn-connect').style.background = 'var(--accent)';
+  document.getElementById('btn-on').disabled    = true;
+  document.getElementById('btn-off').disabled   = true;
+  document.getElementById('btn-timer').disabled = true;
+  log('Desconectado.', 'err');
+}
+
+function onData(event) {
+  const raw = new TextDecoder().decode(event.target.value);
+  const msg = raw.trim();
+
+  if (msg.startsWith('STATUS:')) {
+    // STATUS:bomba:uptime:tensao:timerRestante
+    const parts = msg.split(':');
+    const ligada = parts[1] === '1';
+    const uptime = parts[2] + ':' + parts[3] + ':' + parts[4];
+    const tensao = parseFloat(parts[5]);
+    const timerSeg = parseInt(parts[6]);
+
+    // Status
+    const statusEl = document.getElementById('bomba-status');
+    statusEl.textContent = ligada ? 'LIGADA' : 'DESLIGADA';
+    statusEl.className = ligada ? 'on' : '';
+
+    // Uptime
+    document.getElementById('uptime').textContent = uptime;
+
+    // Timer restante
+    if (timerSeg > 0) {
+      const m = Math.floor(timerSeg / 60);
+      const s = timerSeg % 60;
+      document.getElementById('timer-restante').textContent = m + 'm ' + s + 's';
+    } else {
+      document.getElementById('timer-restante').textContent = '--';
+    }
+
+    // Tensão
+    document.getElementById('tensao').textContent = tensao.toFixed(1) + ' V';
+    const pct = Math.min(100, Math.max(0, ((tensao - 10.5) / (12.6 - 10.5)) * 100));
+    const fill = document.getElementById('battery-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--orange)' : 'var(--red)';
+
+  } else if (msg === 'OK:LIGADA') {
+    log('Bomba ligada.', 'ok');
+  } else if (msg === 'OK:DESLIGADA') {
+    log('Bomba desligada.', 'ok');
+  } else if (msg.startsWith('OK:TIMER:')) {
+    log('Timer de ' + msg.split(':')[2] + ' min iniciado.', 'ok');
+  } else if (msg === 'OK:TIMER_FIM') {
+    log('Timer finalizado. Bomba desligada.', 'info');
+  }
+}
+
+async function enviar(cmd) {
+  if (!rxChar) return;
+  const enc = new TextEncoder().encode(cmd);
+  await rxChar.writeValue(enc);
+}
+
+function ligar()    { enviar('L'); }
+function desligar() { enviar('D'); }
+
+function definirTimer() {
+  const val = parseInt(document.getElementById('timer-input').value);
+  if (!val || val < 1) { log('Digite um valor válido em minutos.', 'err'); return; }
+  enviar('T:' + val);
+  log('Enviando timer: ' + val + ' min...', 'info');
+}
+</script>
+</body>
+</html>
